@@ -1,7 +1,9 @@
 module.exports = (sequelize, Sequelize) => {
     const Viacep = sequelize.define("viacep", {
       zipcode: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
       },
       address: {
         type: Sequelize.STRING

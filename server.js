@@ -21,7 +21,7 @@ db.sequelize.sync();
 
 // simple route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to VueJS CRUD application." });
+  res.json({ message: "Welcome to NodeJS CRUD application." });
 });
 
 // CEP routes

@@ -1,6 +1,8 @@
 const db = require('../models');
 const Viacep = db.viacep;
 const Op = db.Sequelize.Op;
+const NodeCache = require( "node-cache" );
+const myCache = new NodeCache( { stdTTL: 100, checkperiod: 120 } );
 
 exports.create = (req, res) => {
   if (!req.body.zipcode) {
@@ -29,7 +31,7 @@ exports.create = (req, res) => {
   }
 
   const cep = {
-    zipcode: req.body.zipcode,
+    zipcode: req.body.zipcode.trim().replace(/[^0-9]/g, ''),
     address: req.body.address,
     complement: req.body.complement,
     neighborhood: req.body.neighborhood,
@@ -49,7 +51,7 @@ exports.create = (req, res) => {
 };
 
 exports.findAll = (req, res) => {
-  const zipcode = req.query.zipcode;
+  const zipcode = req.query.zipcode.trim().replace(/[^0-9]/g, '');
 
   if (!zipcode) {
     res.status(400).send({
@@ -58,17 +60,33 @@ exports.findAll = (req, res) => {
     return;
   }
 
-  Viacep.findAll({
-      where: { zipcode: { [Op.eq]: zipcode }}
-    })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: err.message || "Some error while search CEP"
+  var isCached = false;
+  if (myCache.has(zipcode)) {
+    var dataCached = myCache.get(zipcode);
+    if (dataCached !== undefined && dataCached.length) {
+      isCached = true;
+      console.log('Loaded by cached');
+      res.send((dataCached));
+    } 
+  } 
+
+  if (!isCached){
+
+    Viacep.findAll({
+        where: { zipcode: { [Op.eq]: zipcode }}
+      })
+      .then(data => {
+        myCache.set(zipcode, JSON.stringify(data), 3600);
+        console.log('Loaded by database');
+        res.send(data);
+      })
+      .catch(err => {
+        res.status(500).send({
+          message: err.message || "Some error while search CEP"
+        });
       });
-    });
+
+  }
 };
 
 exports.update = (req, res) => {
